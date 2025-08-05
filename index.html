@@ -1,1 +1,1362 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meter Monitoring System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .gradient-bg {
+            background: linear-gradient(135deg, #CA9CAC 0%, #f8f9fa 100%);
+        }
+        .animated-pastel-bg {
+            background: linear-gradient(-45deg, #FFB6C1, #DDA0DD, #98FB98, #F0E68C, #87CEEB, #FFA07A);
+            background-size: 400% 400%;
+            animation: gradientShift 8s ease-in-out infinite;
+        }
+        @keyframes gradientShift {
+            0% {
+                background-position: 0% 50%;
+            }
+            25% {
+                background-position: 100% 50%;
+            }
+            50% {
+                background-position: 100% 100%;
+            }
+            75% {
+                background-position: 0% 100%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        .card-shadow {
+            box-shadow: 0 10px 25px rgba(202, 156, 172, 0.15);
+        }
+        .hover-scale {
+            transition: transform 0.3s ease;
+        }
+        .hover-scale:hover {
+            transform: translateY(-2px);
+        }
+        .file-preview {
+            max-width: 200px;
+            max-height: 150px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .tooltip {
+            position: relative;
+            display: inline-block;
+        }
+        .tooltip .tooltiptext {
+            visibility: hidden;
+            width: 300px;
+            background-color: #555;
+            color: white;
+            text-align: center;
+            border-radius: 6px;
+            padding: 5px;
+            position: absolute;
+            z-index: 1;
+            bottom: 125%;
+            left: 50%;
+            margin-left: -150px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+        .tooltip:hover .tooltiptext {
+            visibility: visible;
+            opacity: 1;
+        }
+        .tracking-step {
+            position: relative;
+        }
+        .tracking-step::after {
+            content: '';
+            position: absolute;
+            top: 30px;
+            left: 50%;
+            width: 2px;
+            height: 60px;
+            background: #e5e7eb;
+            transform: translateX(-50%);
+        }
+        .tracking-step:last-child::after {
+            display: none;
+        }
+        .tracking-step.completed::after {
+            background: #CA9CAC;
+        }
+        .login-overlay {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+        }
+        .expanded-table {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1000;
+            background: white;
+            overflow: auto;
+        }
+        .file-preview-modal {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 20px 25px rgba(0, 0, 0, 0.3);
+            z-index: 2000;
+            max-width: 90vw;
+            max-height: 90vh;
+            overflow: auto;
+        }
+        .file-preview-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 1999;
+        }
+        .tracking-step-hover {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .tracking-step-hover:hover {
+            background-color: #f3f4f6;
+            border-radius: 8px;
+            padding: 8px;
+        }
+        @media (max-width: 768px) {
+            .mobile-grid {
+                grid-template-columns: 1fr;
+            }
+            .mobile-text {
+                font-size: 0.875rem;
+            }
+            .mobile-padding {
+                padding: 1rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="fixed inset-0 login-overlay flex items-center justify-center z-50">
+        <div class="bg-white rounded-lg p-8 max-w-md w-full mx-4 card-shadow">
+            <div class="text-center mb-6">
+                <i class="fas fa-lock text-4xl text-pink-400 mb-4"></i>
+                <h2 class="text-2xl font-bold text-gray-800">เข้าสู่ระบบ</h2>
+                <p class="text-gray-600 mt-2">กรุณาเข้าสู่ระบบเพื่อใช้งาน</p>
+            </div>
+            <form id="loginForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">ชื่อผู้ใช้</label>
+                    <input type="text" id="username" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" required>
+                </div>
+                <div class="mb-6">
+                    <label class="block text-gray-700 text-sm font-bold mb-2">รหัสผ่าน</label>
+                    <input type="password" id="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" required>
+                </div>
+                <button type="submit" class="w-full bg-pink-400 text-white py-2 px-4 rounded-lg hover:bg-pink-500 transition duration-300">
+                    <i class="fas fa-sign-in-alt mr-2"></i>เข้าสู่ระบบ
+                </button>
+            </form>
+        </div>
+    </div>
 
+    <!-- Main App -->
+    <div id="mainApp" class="hidden">
+        <!-- Banner -->
+        <div id="banner" class="w-full h-72 bg-gradient-to-r from-pink-400 to-purple-400 relative overflow-hidden">
+            <img id="bannerImage" src="" alt="Banner" class="w-full h-full object-cover" style="display: none;">
+        </div>
+        
+        <!-- App Title -->
+        <div class="animated-pastel-bg py-6 shadow-sm">
+            <div class="container mx-auto px-4 text-center">
+                <h1 id="appTitle" class="text-3xl md:text-5xl font-bold text-white drop-shadow-lg">Meter Monitoring</h1>
+		
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="bg-white shadow-lg sticky top-0 z-40">
+            <div class="container mx-auto px-4">
+                <div class="flex justify-center space-x-8 py-4">
+                    <button onclick="showTab('record')" class="nav-btn px-6 py-2 rounded-lg font-medium transition duration-300 bg-pink-400 text-white">
+                        <i class="fas fa-edit mr-2"></i>บันทึกข้อมูล
+                    </button>
+                    <button onclick="showTab('dashboard')" class="nav-btn px-6 py-2 rounded-lg font-medium transition duration-300 text-pink-400 hover:bg-pink-50">
+                        <i class="fas fa-chart-bar mr-2"></i>แดชบอร์ด
+                    </button>
+                    <button onclick="showTab('other')" class="nav-btn px-6 py-2 rounded-lg font-medium transition duration-300 text-pink-400 hover:bg-pink-50">
+                        <i class="fas fa-link mr-2"></i>อื่นๆ
+                    </button>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Record Tab -->
+        <div id="recordTab" class="container mx-auto px-4 py-8">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white rounded-lg card-shadow p-6 md:p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                        <i class="fas fa-plus-circle text-pink-400 mr-2"></i>บันทึกข้อมูลมิเตอร์ชั่วคราว(PEA NAKHONPHANOM)
+                    </h2>
+                    
+                    <form id="recordForm" class="space-y-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Timestamp -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">วันที่</label>
+                                <input type="datetime-local" id="timestamp" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" required>
+                            </div>
+
+                            <!-- Meter Type -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ประเภทมิเตอร์</label>
+                                <select id="meterType" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" required>
+                                    <option value="">เลือกประเภทมิเตอร์</option>
+                                </select>
+                            </div>
+
+                            <!-- Organization Name -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อหน่วยงาน</label>
+                                <input type="text" id="orgName" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" required>
+                            </div>
+
+                            <!-- CA -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">CA</label>
+                                <input type="number" id="ca" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
+                            </div>
+
+                            <!-- Installation Point -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">จุดติดตั้ง</label>
+                                <input type="text" id="installPoint" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" required>
+                            </div>
+
+                            <!-- Contact -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">เบอร์ติดต่อ</label>
+                                <input type="text" id="contact" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" required>
+                            </div>
+                        </div>
+
+                        <!-- File Upload Sections -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- Request File -->
+                            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ไฟล์คำร้อง/หนังสือจากหน่วยงาน</label>
+                                <input type="file" id="requestFile" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" onchange="previewFile(this, 'requestPreview')">
+                                <div id="requestPreview" class="mt-2"></div>
+                            </div>
+
+                            <!-- Initial Unit -->
+                            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">หน่วยตั้งต้น</label>
+                                <input type="file" id="initialUnit" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" onchange="previewFile(this, 'initialPreview')">
+                                <div id="initialPreview" class="mt-2"></div>
+                            </div>
+
+                            <!-- Removal Unit -->
+                            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">หน่วยถอดถอน</label>
+                                <input type="file" id="removalUnit" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" onchange="previewFile(this, 'removalPreview')">
+                                <div id="removalPreview" class="mt-2"></div>
+                            </div>
+
+                            <!-- Final Bills -->
+                            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Final Bills</label>
+                                <input type="file" id="finalBills" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" onchange="previewFile(this, 'finalPreview')">
+                                <div id="finalPreview" class="mt-2"></div>
+                            </div>
+
+                            <!-- Invoice -->
+                            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 md:col-span-2">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">ใบแจ้งหนี้</label>
+                                <input type="file" id="invoice" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" onchange="previewFile(this, 'invoicePreview')">
+                                <div id="invoicePreview" class="mt-2"></div>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div class="bg-gray-50 p-4 rounded-lg">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">หมายเหตุ</label>
+                            <textarea id="notes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" placeholder="กรอกหมายเหตุ..."></textarea>
+                        </div>
+
+                        <div class="text-center">
+                            <button type="submit" class="bg-pink-400 text-white px-8 py-3 rounded-lg hover:bg-pink-500 transition duration-300 font-medium">
+                                <i class="fas fa-save mr-2"></i>บันทึกข้อมูล
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboardTab" class="container mx-auto px-4 py-8 hidden">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="bg-white rounded-lg card-shadow p-6 hover-scale">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-blue-100 text-blue-600">
+                            <i class="fas fa-tasks text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-700">งานทั้งหมด</h3>
+                            <p id="totalJobs" class="text-3xl font-bold text-blue-600">0</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg card-shadow p-6 hover-scale">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-yellow-100 text-yellow-600">
+                            <i class="fas fa-clock text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-700">กำลังดำเนินการ</h3>
+                            <p id="inProgressJobs" class="text-3xl font-bold text-yellow-600">0 <span class="text-sm">(0%)</span></p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-white rounded-lg card-shadow p-6 hover-scale">
+                    <div class="flex items-center">
+                        <div class="p-3 rounded-full bg-green-100 text-green-600">
+                            <i class="fas fa-check-circle text-2xl"></i>
+                        </div>
+                        <div class="ml-4">
+                            <h3 class="text-lg font-semibold text-gray-700">แล้วเสร็จ</h3>
+                            <p id="completedJobs" class="text-3xl font-bold text-green-600">0 <span class="text-sm">(0%)</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Search and Filter -->
+            <div class="bg-white rounded-lg card-shadow p-6 mb-8">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ค้นหา</label>
+                        <input type="text" id="searchInput" placeholder="ค้นหาชื่อหน่วยงานหรือ CA..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">กรองสถานะ</label>
+                        <select id="statusFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
+                            <option value="">ทั้งหมด</option>
+                            <option value="in-progress">กำลังดำเนินการ</option>
+                            <option value="completed">แล้วเสร็จ</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end">
+                        <button onclick="exportData()" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition duration-300">
+                            <i class="fas fa-download mr-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="bg-white rounded-lg card-shadow overflow-hidden">
+                <div class="flex justify-between items-center p-4 border-b">
+                    <h3 class="text-lg font-semibold text-gray-800">ตารางข้อมูลงาน</h3>
+                    <div class="flex space-x-2">
+                        <button onclick="expandTable()" id="expandBtn" class="bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition duration-300">
+                            <i class="fas fa-expand mr-2"></i>ขยายตาราง
+                        </button>
+                        <button onclick="collapseTable()" id="collapseBtn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition duration-300 hidden">
+                            <i class="fas fa-compress mr-2"></i>ปิดตาราง
+                        </button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto" id="tableContainer">
+                    <table class="w-full">
+                        <thead class="bg-pink-400 text-white">
+                            <tr>
+                                <th class="px-4 py-3 text-left">ลำดับ</th>
+                                <th class="px-4 py-3 text-left">ชื่อหน่วยงาน</th>
+                                <th class="px-4 py-3 text-left">CA</th>
+                                <th class="px-4 py-3 text-left">จุดติดตั้ง</th>
+                                <th class="px-4 py-3 text-left">เบอร์ติดต่อ</th>
+                                <th class="px-4 py-3 text-left">สถานะ</th>
+                                <th class="px-4 py-3 text-left">จัดการ</th>
+                            </tr>
+                        </thead>
+                        <tbody id="dataTableBody">
+                            <!-- Data will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div id="pagination" class="flex justify-center items-center py-4 space-x-2">
+                    <!-- Pagination buttons will be generated here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Other Tab -->
+        <div id="otherTab" class="container mx-auto px-4 py-8 hidden">
+            <div class="max-w-4xl mx-auto">
+                <div class="bg-white rounded-lg card-shadow p-6 md:p-8">
+                    <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
+                        <i class="fas fa-link text-pink-400 mr-2"></i>ลิงก์อื่นๆ
+                    </h2>
+                    
+                    <div id="otherLinks" class="space-y-4">
+                        <!-- Links will be populated from Google Sheets -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tracking Modal -->
+        <div id="trackingModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">ติดตามสถานะงาน</h3>
+                        <button onclick="closeTrackingModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <div id="trackingContent">
+                        <!-- Tracking content will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Update Modal -->
+        <div id="updateModal" class="fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+            <div class="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-gray-800">อัพเดทข้อมูล</h3>
+                        <button onclick="closeUpdateModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <form id="updateForm">
+                        <div id="updateFormContent">
+                            <!-- Update form content will be populated here -->
+                        </div>
+                        
+                        <div class="text-center mt-6">
+                            <button type="submit" class="bg-pink-400 text-white px-8 py-3 rounded-lg hover:bg-pink-500 transition duration-300 font-medium">
+                                <i class="fas fa-save mr-2"></i>บันทึกการอัพเดท
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="bg-gray-800 text-white py-6 mt-16">
+            <div class="container mx-auto px-4 text-center">
+                <div class="mb-4">
+                    <div class="flex justify-center items-center space-x-8 text-sm">
+                        <div class="flex items-center">
+                            <i class="fas fa-eye mr-2 text-blue-400"></i>
+                            <span>ผู้เข้าชมวันนี้: <span id="todayVisitors" class="font-semibold text-blue-400">0</span></span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-users mr-2 text-green-400"></i>
+                            <span>ผู้เข้าชมทั้งหมด: <span id="totalVisitors" class="font-semibold text-green-400">0</span></span>
+                        </div>
+                        <div class="flex items-center">
+                            <i class="fas fa-globe mr-2 text-yellow-400"></i>
+                            <span>ออนไลน์: <span id="onlineUsers" class="font-semibold text-yellow-400">1</span></span>
+                        </div>
+                    </div>
+                </div>
+                <p id="developerInfo" class="text-sm text-gray-300">พัฒนาโดย นายศุภกฤษ ทะวัง ชผ.บส.กฟส.เมืองนครพนม</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        // Global variables
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxiRoN7c67v-UrK-MiBFMzCD7OsrV2aG-zmX1CsyYiJMPuUHAi5SurguLBwDnoby6o2/exec';
+        let allData = [];
+        let currentPage = 1;
+        const itemsPerPage = 10;
+        let appConfig = {};
+
+        // Initialize app
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set current timestamp
+            const now = new Date();
+            now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+            document.getElementById('timestamp').value = now.toISOString().slice(0, 16);
+            
+            // Load configuration
+            loadAppConfig();
+            
+            // Initialize visitor statistics
+            initVisitorStats();
+        });
+
+        // Login functionality
+        document.getElementById('loginForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            Swal.fire({
+                title: 'กำลังเข้าสู่ระบบ...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            try {
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        action: 'login',
+                        username: username,
+                        password: password
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'เข้าสู่ระบบสำเร็จ!',
+                        showConfirmButton: false,
+                        timer: 1500
+                    });
+                    
+                    setTimeout(() => {
+                        document.getElementById('loginOverlay').classList.add('hidden');
+                        document.getElementById('mainApp').classList.remove('hidden');
+                        loadAppConfig();
+                    }, 1500);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เข้าสู่ระบบไม่สำเร็จ',
+                        text: 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง'
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+                });
+            }
+        });
+
+        // Load app configuration
+        async function loadAppConfig() {
+            try {
+                const response = await fetch(SCRIPT_URL + '?action=getConfig');
+                const config = await response.json();
+                
+                if (config.success) {
+                    appConfig = config.data;
+                    
+                    // Update app title
+                    if (appConfig.appTitle) {
+                        document.getElementById('appTitle').textContent = appConfig.appTitle;
+                    }
+                    
+                    // Update banner image
+                    if (appConfig.bannerImage) {
+                        const bannerImg = document.getElementById('bannerImage');
+                        bannerImg.src = appConfig.bannerImage;
+                        bannerImg.style.display = 'block';
+                    }
+                    
+                    // Update developer info
+                    if (appConfig.developerInfo) {
+                        document.getElementById('developerInfo').textContent = appConfig.developerInfo;
+                    }
+                    
+                    // Load meter types
+                    if (appConfig.meterTypes) {
+                        const meterTypeSelect = document.getElementById('meterType');
+                        meterTypeSelect.innerHTML = '<option value="">เลือกประเภทมิเตอร์</option>';
+                        appConfig.meterTypes.forEach(type => {
+                            const option = document.createElement('option');
+                            option.value = type;
+                            option.textContent = type;
+                            meterTypeSelect.appendChild(option);
+                        });
+                    }
+                    
+                    // Load other links
+                    loadOtherLinks();
+                }
+            } catch (error) {
+                console.error('Error loading config:', error);
+            }
+        }
+
+        // Load other links
+        function loadOtherLinks() {
+            if (appConfig.otherLinks) {
+                const container = document.getElementById('otherLinks');
+                container.innerHTML = '';
+                
+                appConfig.otherLinks.forEach(link => {
+                    const linkDiv = document.createElement('div');
+                    linkDiv.className = 'bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition duration-300';
+                    linkDiv.innerHTML = `
+                        <a href="${link.url}" target="_blank" class="flex items-center text-pink-600 hover:text-pink-800">
+                            <i class="fas fa-external-link-alt mr-3"></i>
+                            <span class="font-medium">${link.name}</span>
+                        </a>
+                    `;
+                    container.appendChild(linkDiv);
+                });
+            }
+        }
+
+        // Tab navigation
+        function showTab(tabName) {
+            // Hide all tabs
+            document.getElementById('recordTab').classList.add('hidden');
+            document.getElementById('dashboardTab').classList.add('hidden');
+            document.getElementById('otherTab').classList.add('hidden');
+            
+            // Show selected tab
+            document.getElementById(tabName + 'Tab').classList.remove('hidden');
+            
+            // Update nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('bg-pink-400', 'text-white');
+                btn.classList.add('text-pink-400', 'hover:bg-pink-50');
+            });
+            
+            event.target.classList.add('bg-pink-400', 'text-white');
+            event.target.classList.remove('text-pink-400', 'hover:bg-pink-50');
+            
+            // Load data for dashboard
+            if (tabName === 'dashboard') {
+                loadDashboardData();
+            }
+        }
+
+        // File preview functionality
+        function previewFile(input, previewId) {
+            const preview = document.getElementById(previewId);
+            preview.innerHTML = '';
+            
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                const reader = new FileReader();
+                
+                reader.onload = function(e) {
+                    if (file.type.startsWith('image/')) {
+                        const img = document.createElement('img');
+                        img.src = e.target.result;
+                        img.className = 'file-preview tooltip';
+                        img.innerHTML = `<span class="tooltiptext"><img src="${e.target.result}" style="max-width: 100%; max-height: 200px;"></span>`;
+                        preview.appendChild(img);
+                    } else {
+                        const fileInfo = document.createElement('div');
+                        fileInfo.className = 'text-sm text-gray-600 bg-gray-100 p-2 rounded';
+                        fileInfo.innerHTML = `<i class="fas fa-file mr-2"></i>${file.name}`;
+                        preview.appendChild(fileInfo);
+                    }
+                };
+                
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // Convert file to base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.readAsDataURL(file);
+                reader.onload = () => resolve(reader.result.split(',')[1]);
+                reader.onerror = error => reject(error);
+            });
+        }
+
+        // Record form submission
+        document.getElementById('recordForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            Swal.fire({
+                title: 'กำลังบันทึกข้อมูล...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.append('action', 'addRecord');
+                formData.append('timestamp', document.getElementById('timestamp').value);
+                formData.append('meterType', document.getElementById('meterType').value);
+                formData.append('orgName', document.getElementById('orgName').value);
+                formData.append('ca', document.getElementById('ca').value);
+                formData.append('installPoint', document.getElementById('installPoint').value);
+                formData.append('contact', document.getElementById('contact').value);
+                formData.append('notes', document.getElementById('notes').value);
+                
+                // Handle file uploads
+                const fileFields = ['requestFile', 'initialUnit', 'removalUnit', 'finalBills', 'invoice'];
+                for (const fieldId of fileFields) {
+                    const fileInput = document.getElementById(fieldId);
+                    if (fileInput.files && fileInput.files[0]) {
+                        const file = fileInput.files[0];
+                        const base64 = await fileToBase64(file);
+                        formData.append(fieldId, base64);
+                        formData.append(fieldId + '_name', file.name);
+                        formData.append(fieldId + '_type', file.type);
+                    }
+                }
+                
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'บันทึกข้อมูลสำเร็จ!',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                    
+                    // Reset form
+                    document.getElementById('recordForm').reset();
+                    document.querySelectorAll('[id$="Preview"]').forEach(preview => {
+                        preview.innerHTML = '';
+                    });
+                    
+                    // Set current timestamp again
+                    const now = new Date();
+                    now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+                    document.getElementById('timestamp').value = now.toISOString().slice(0, 16);
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: result.message || 'ไม่สามารถบันทึกข้อมูลได้'
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+                });
+            }
+        });
+
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                const response = await fetch(SCRIPT_URL + '?action=getData');
+                const result = await response.json();
+                
+                if (result.success) {
+                    allData = result.data;
+                    updateStats();
+                    displayData();
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            const total = allData.length;
+            const completed = allData.filter(item => isCompleted(item)).length;
+            const inProgress = total - completed;
+            
+            document.getElementById('totalJobs').textContent = total;
+            document.getElementById('completedJobs').innerHTML = `${completed} <span class="text-sm">(${total > 0 ? Math.round(completed/total*100) : 0}%)</span>`;
+            document.getElementById('inProgressJobs').innerHTML = `${inProgress} <span class="text-sm">(${total > 0 ? Math.round(inProgress/total*100) : 0}%)</span>`;
+        }
+
+        // Check if record is completed
+        function isCompleted(record) {
+            return record.invoice && record.invoice.trim() !== '';
+        }
+
+        // Display data in table
+        function displayData() {
+            const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+            const statusFilter = document.getElementById('statusFilter').value;
+            
+            let filteredData = allData.filter(item => {
+                const matchesSearch = item.orgName.toLowerCase().includes(searchTerm) || 
+                                    (item.ca && item.ca.toString().includes(searchTerm));
+                
+                let matchesStatus = true;
+                if (statusFilter === 'completed') {
+                    matchesStatus = isCompleted(item);
+                } else if (statusFilter === 'in-progress') {
+                    matchesStatus = !isCompleted(item);
+                }
+                
+                return matchesSearch && matchesStatus;
+            });
+            
+            const startIndex = (currentPage - 1) * itemsPerPage;
+            const endIndex = startIndex + itemsPerPage;
+            const pageData = filteredData.slice(startIndex, endIndex);
+            
+            const tbody = document.getElementById('dataTableBody');
+            tbody.innerHTML = '';
+            
+            pageData.forEach((item, index) => {
+                const row = document.createElement('tr');
+                row.className = 'border-b hover:bg-gray-50';
+                
+                const status = isCompleted(item) ? 
+                    '<span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs">แล้วเสร็จ</span>' :
+                    '<span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs">กำลังดำเนินการ</span>';
+                
+                const isItemCompleted = isCompleted(item);
+                const updateButtonClass = isItemCompleted ? 
+                    'bg-gray-300 text-gray-500 px-3 py-1 rounded text-sm cursor-not-allowed' : 
+                    'bg-pink-400 text-white px-3 py-1 rounded text-sm hover:bg-pink-500';
+                
+                row.innerHTML = `
+                    <td class="px-4 py-3">${item.id || startIndex + index + 1}</td>
+                    <td class="px-4 py-3">${item.orgName}</td>
+                    <td class="px-4 py-3">${item.ca || '-'}</td>
+                    <td class="px-4 py-3">${item.installPoint}</td>
+                    <td class="px-4 py-3">${item.contact || '-'}</td>
+                    <td class="px-4 py-3">${status}</td>
+                    <td class="px-4 py-3">
+                        <button onclick="showTracking(${startIndex + index})" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 mr-2">
+                            <i class="fas fa-eye"></i> ติดตาม
+                        </button>
+                        <button onclick="${isItemCompleted ? 'return false;' : `showUpdateModal(${startIndex + index})`}" 
+                                class="${updateButtonClass}" 
+                                ${isItemCompleted ? 'disabled title="งานนี้เสร็จสิ้นแล้ว ไม่สามารถแก้ไขได้"' : ''}>
+                            <i class="fas fa-edit"></i> อัพเดท
+                        </button>
+                    </td>
+                `;
+                
+                tbody.appendChild(row);
+            });
+            
+            // Update pagination
+            updatePagination(filteredData.length);
+        }
+
+        // Update pagination
+        function updatePagination(totalItems) {
+            const totalPages = Math.ceil(totalItems / itemsPerPage);
+            const pagination = document.getElementById('pagination');
+            pagination.innerHTML = '';
+            
+            if (totalPages <= 1) return;
+            
+            // Previous button
+            const prevBtn = document.createElement('button');
+            prevBtn.className = `px-3 py-2 rounded ${currentPage === 1 ? 'bg-gray-200 text-gray-400' : 'bg-pink-400 text-white hover:bg-pink-500'}`;
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayData();
+                }
+            };
+            pagination.appendChild(prevBtn);
+            
+            // Page numbers
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `px-3 py-2 rounded ${i === currentPage ? 'bg-pink-400 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => {
+                    currentPage = i;
+                    displayData();
+                };
+                pagination.appendChild(pageBtn);
+            }
+            
+            // Next button
+            const nextBtn = document.createElement('button');
+            nextBtn.className = `px-3 py-2 rounded ${currentPage === totalPages ? 'bg-gray-200 text-gray-400' : 'bg-pink-400 text-white hover:bg-pink-500'}`;
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    displayData();
+                }
+            };
+            pagination.appendChild(nextBtn);
+        }
+
+        // Search and filter event listeners
+        document.getElementById('searchInput').addEventListener('input', () => {
+            currentPage = 1;
+            displayData();
+        });
+
+        document.getElementById('statusFilter').addEventListener('change', () => {
+            currentPage = 1;
+            displayData();
+        });
+
+        // Show tracking modal
+        function showTracking(index) {
+            const item = allData[index];
+            const modal = document.getElementById('trackingModal');
+            const content = document.getElementById('trackingContent');
+            
+            const steps = [
+                { name: 'ไฟล์คำร้อง/หนังสือ', field: 'requestFile', icon: 'fas fa-file-alt' },
+                { name: 'หน่วยตั้งต้น', field: 'initialUnit', icon: 'fas fa-play-circle' },
+                { name: 'หน่วยถอดถอน', field: 'removalUnit', icon: 'fas fa-stop-circle' },
+                { name: 'Final Bills', field: 'finalBills', icon: 'fas fa-file-invoice' },
+                { name: 'ใบแจ้งหนี้', field: 'invoice', icon: 'fas fa-receipt' }
+            ];
+            
+            content.innerHTML = `
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-gray-800">${item.orgName}</h4>
+                    <p class="text-gray-600">CA: ${item.ca || '-'} | จุดติดตั้ง: ${item.installPoint}</p>
+                </div>
+                
+                <div class="space-y-6">
+                    ${steps.map(step => {
+                        const isCompleted = item[step.field] && item[step.field].trim() !== '';
+                        const fileUrl = item[step.field] || '';
+                        return `
+                            <div class="tracking-step ${isCompleted ? 'completed' : ''} tracking-step-hover" 
+                                 ${isCompleted ? `onclick="showFilePreview('${fileUrl}', '${step.name}')"` : ''}>
+                                <div class="flex items-center">
+                                    <div class="w-8 h-8 rounded-full flex items-center justify-center ${isCompleted ? 'bg-pink-400 text-white' : 'bg-gray-200 text-gray-400'}">
+                                        <i class="${step.icon}"></i>
+                                    </div>
+                                    <div class="ml-4 flex-1">
+                                        <h5 class="font-medium ${isCompleted ? 'text-pink-600' : 'text-gray-500'}">${step.name}</h5>
+                                        <p class="text-sm text-gray-500">${isCompleted ? 'เสร็จสิ้น - คลิกเพื่อดูไฟล์' : 'รอดำเนินการ'}</p>
+                                    </div>
+                                    ${isCompleted ? '<i class="fas fa-check text-green-500"></i>' : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+                
+                ${item.notes ? `
+                    <div class="mt-6 p-4 bg-gray-50 rounded-lg">
+                        <h5 class="font-medium text-gray-700 mb-2">หมายเหตุ:</h5>
+                        <p class="text-gray-600">${item.notes}</p>
+                    </div>
+                ` : ''}
+            `;
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // Close tracking modal
+        function closeTrackingModal() {
+            document.getElementById('trackingModal').classList.add('hidden');
+            document.getElementById('trackingModal').classList.remove('flex');
+        }
+
+        // Show update modal
+        function showUpdateModal(index) {
+            const item = allData[index];
+            const modal = document.getElementById('updateModal');
+            const content = document.getElementById('updateFormContent');
+            
+            content.innerHTML = `
+                <input type="hidden" id="updateIndex" value="${index}">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ชื่อหน่วยงาน</label>
+                        <input type="text" id="updateOrgName" value="${item.orgName}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" readonly>
+                    </div>
+                    
+                    <div class="bg-gray-50 p-4 rounded-lg">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">CA</label>
+                        <input type="text" id="updateCA" value="${item.ca || ''}" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" readonly>
+                    </div>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ไฟล์คำร้อง/หนังสือ</label>
+                        <input type="file" id="updateRequestFile" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
+                        ${item.requestFile ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว</p>' : ''}
+                    </div>
+                    
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">หน่วยตั้งต้น</label>
+                        <input type="file" id="updateInitialUnit" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
+                        ${item.initialUnit ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว</p>' : ''}
+                    </div>
+                    
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">หน่วยถอดถอน</label>
+                        <input type="file" id="updateRemovalUnit" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
+                        ${item.removalUnit ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว</p>' : ''}
+                    </div>
+                    
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Final Bills</label>
+                        <input type="file" id="updateFinalBills" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
+                        ${item.finalBills ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว</p>' : ''}
+                    </div>
+                    
+                    <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 md:col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">ใบแจ้งหนี้</label>
+                        <input type="file" id="updateInvoice" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
+                        ${item.invoice ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว</p>' : ''}
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 p-4 rounded-lg mt-6">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">หมายเหตุ</label>
+                    <textarea id="updateNotes" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">${item.notes || ''}</textarea>
+                </div>
+            `;
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // Close update modal
+        function closeUpdateModal() {
+            document.getElementById('updateModal').classList.add('hidden');
+            document.getElementById('updateModal').classList.remove('flex');
+        }
+
+        // Update form submission
+        document.getElementById('updateForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const index = document.getElementById('updateIndex').value;
+            
+            Swal.fire({
+                title: 'กำลังอัพเดทข้อมูล...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            try {
+                const formData = new URLSearchParams();
+                formData.append('action', 'updateRecord');
+                formData.append('index', index);
+                formData.append('notes', document.getElementById('updateNotes').value);
+                
+                // Handle file uploads
+                const fileFields = ['updateRequestFile', 'updateInitialUnit', 'updateRemovalUnit', 'updateFinalBills', 'updateInvoice'];
+                for (const fieldId of fileFields) {
+                    const fileInput = document.getElementById(fieldId);
+                    if (fileInput.files && fileInput.files[0]) {
+                        const file = fileInput.files[0];
+                        const base64 = await fileToBase64(file);
+                        const originalFieldName = fieldId.replace('update', '').toLowerCase();
+                        formData.append(originalFieldName, base64);
+                        formData.append(originalFieldName + '_name', file.name);
+                        formData.append(originalFieldName + '_type', file.type);
+                    }
+                }
+                
+                const response = await fetch(SCRIPT_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: formData
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'อัพเดทข้อมูลสำเร็จ!',
+                        showConfirmButton: false,
+                        timer: 2000
+                    });
+                    
+                    closeUpdateModal();
+                    loadDashboardData();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'เกิดข้อผิดพลาด',
+                        text: result.message || 'ไม่สามารถอัพเดทข้อมูลได้'
+                    });
+                }
+            } catch (error) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'เกิดข้อผิดพลาด',
+                    text: 'ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้'
+                });
+            }
+        });
+
+        // Expand table function
+        function expandTable() {
+            const tableContainer = document.querySelector('.bg-white.rounded-lg.card-shadow.overflow-hidden');
+            const expandBtn = document.getElementById('expandBtn');
+            const collapseBtn = document.getElementById('collapseBtn');
+            
+            tableContainer.classList.add('expanded-table');
+            expandBtn.classList.add('hidden');
+            collapseBtn.classList.remove('hidden');
+            
+            // Add close button functionality with ESC key
+            document.addEventListener('keydown', handleEscapeKey);
+        }
+
+        // Collapse table function
+        function collapseTable() {
+            const tableContainer = document.querySelector('.bg-white.rounded-lg.card-shadow.overflow-hidden');
+            const expandBtn = document.getElementById('expandBtn');
+            const collapseBtn = document.getElementById('collapseBtn');
+            
+            tableContainer.classList.remove('expanded-table');
+            expandBtn.classList.remove('hidden');
+            collapseBtn.classList.add('hidden');
+            
+            // Remove ESC key listener
+            document.removeEventListener('keydown', handleEscapeKey);
+        }
+
+        // Handle ESC key for closing expanded table
+        function handleEscapeKey(event) {
+            if (event.key === 'Escape') {
+                collapseTable();
+            }
+        }
+
+        // Show file preview function
+        function showFilePreview(fileUrl, fileName) {
+            if (!fileUrl || fileUrl.trim() === '') {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'ไม่มีไฟล์',
+                    text: 'ไม่พบไฟล์สำหรับรายการนี้'
+                });
+                return;
+            }
+
+            // Create overlay
+            const overlay = document.createElement('div');
+            overlay.className = 'file-preview-overlay';
+            overlay.onclick = closeFilePreview;
+
+            // Create modal
+            const modal = document.createElement('div');
+            modal.className = 'file-preview-modal';
+            modal.innerHTML = `
+                <div class="p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-semibold text-gray-800">${fileName}</h3>
+                        <button onclick="closeFilePreview()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="text-center">
+                        <img src="${fileUrl}" alt="${fileName}" class="max-w-full max-h-96 mx-auto rounded-lg shadow-lg" 
+                             onerror="this.style.display='none'; this.nextElementSibling.style.display='block';">
+                        <div style="display: none;" class="p-8 text-gray-500">
+                            <i class="fas fa-file text-4xl mb-4"></i>
+                            <p>ไม่สามารถแสดงตัวอย่างไฟล์ได้</p>
+                            <a href="${fileUrl}" target="_blank" class="inline-block mt-4 bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
+                                <i class="fas fa-external-link-alt mr-2"></i>เปิดไฟล์
+                            </a>
+                        </div>
+                    </div>
+                    <div class="mt-4 text-center">
+                        <a href="${fileUrl}" target="_blank" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 mr-2">
+                            <i class="fas fa-external-link-alt mr-2"></i>เปิดในแท็บใหม่
+                        </a>
+                        <button onclick="closeFilePreview()" class="bg-gray-500 text-white px-4 py-2 rounded hover:bg-gray-600">
+                            <i class="fas fa-times mr-2"></i>ปิด
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            // Add to document
+            document.body.appendChild(overlay);
+            document.body.appendChild(modal);
+
+            // Add ESC key listener
+            document.addEventListener('keydown', handleFilePreviewEscape);
+        }
+
+        // Close file preview
+        function closeFilePreview() {
+            const overlay = document.querySelector('.file-preview-overlay');
+            const modal = document.querySelector('.file-preview-modal');
+            
+            if (overlay) overlay.remove();
+            if (modal) modal.remove();
+            
+            document.removeEventListener('keydown', handleFilePreviewEscape);
+        }
+
+        // Handle ESC key for file preview
+        function handleFilePreviewEscape(event) {
+            if (event.key === 'Escape') {
+                closeFilePreview();
+            }
+        }
+
+        // Visitor statistics functions
+        function initVisitorStats() {
+            // Get today's date
+            const today = new Date().toDateString();
+            
+            // Get stored statistics
+            let totalVisitors = parseInt(localStorage.getItem('totalVisitors') || '0');
+            let todayVisitors = parseInt(localStorage.getItem('todayVisitors') || '0');
+            let lastVisitDate = localStorage.getItem('lastVisitDate');
+            
+            // Check if it's a new day
+            if (lastVisitDate !== today) {
+                // Reset today's counter for new day
+                todayVisitors = 0;
+                localStorage.setItem('lastVisitDate', today);
+            }
+            
+            // Increment counters
+            totalVisitors++;
+            todayVisitors++;
+            
+            // Store updated statistics
+            localStorage.setItem('totalVisitors', totalVisitors.toString());
+            localStorage.setItem('todayVisitors', todayVisitors.toString());
+            
+            // Update display
+            updateVisitorDisplay(todayVisitors, totalVisitors);
+            
+            // Simulate online users (random between 1-5)
+            const onlineUsers = Math.floor(Math.random() * 5) + 1;
+            document.getElementById('onlineUsers').textContent = onlineUsers;
+        }
+        
+        function updateVisitorDisplay(today, total) {
+            // Animate counter
+            animateCounter('todayVisitors', today);
+            animateCounter('totalVisitors', total);
+        }
+        
+        function animateCounter(elementId, targetValue) {
+            const element = document.getElementById(elementId);
+            const startValue = parseInt(element.textContent) || 0;
+            const duration = 1000; // 1 second
+            const startTime = Date.now();
+            
+            function updateCounter() {
+                const elapsed = Date.now() - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+                
+                // Easing function
+                const easeOut = 1 - Math.pow(1 - progress, 3);
+                const currentValue = Math.floor(startValue + (targetValue - startValue) * easeOut);
+                
+                element.textContent = currentValue.toLocaleString();
+                
+                if (progress < 1) {
+                    requestAnimationFrame(updateCounter);
+                }
+            }
+            
+            updateCounter();
+        }
+
+        // Export data
+        function exportData() {
+            if (allData.length === 0) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'ไม่มีข้อมูลสำหรับ Export',
+                    text: 'กรุณาเพิ่มข้อมูลก่อนทำการ Export'
+                });
+                return;
+            }
+            
+            const headers = ['ลำดับ', 'วันที่', 'ประเภทมิเตอร์', 'ชื่อหน่วยงาน', 'CA', 'จุดติดตั้ง', 'เบอร์ติดต่อ', 'สถานะ', 'หมายเหตุ'];
+            const csvContent = [
+                headers.join(','),
+                ...allData.map((item, index) => [
+                    index + 1,
+                    item.timestamp || '',
+                    item.meterType || '',
+                    `"${item.orgName || ''}"`,
+                    item.ca || '',
+                    `"${item.installPoint || ''}"`,
+                    item.contact || '',
+                    isCompleted(item) ? 'แล้วเสร็จ' : 'กำลังดำเนินการ',
+                    `"${item.notes || ''}"`
+                ].join(','))
+            ].join('\n');
+            
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `meter_monitoring_${new Date().toISOString().split('T')[0]}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            Swal.fire({
+                icon: 'success',
+                title: 'Export สำเร็จ!',
+                text: 'ไฟล์ได้ถูกดาวน์โหลดแล้ว',
+                showConfirmButton: false,
+                timer: 2000
+            });
+        }
+    </script>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96a798b283c6d022',t:'MTc1NDQxMDU2MC4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+</html>
