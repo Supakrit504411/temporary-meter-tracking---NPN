@@ -177,14 +177,16 @@
     <!-- Main App -->
     <div id="mainApp" class="hidden">
         <!-- Banner -->
-        <div id="banner" class="w-full h-72 bg-gradient-to-r from-pink-400 to-purple-400 relative overflow-hidden">
-            <img id="bannerImage" src="" alt="Banner" class="w-full h-full object-cover" style="display: none;">
+        <div id="banner" class="w-full h-96 bg-gradient-to-r from-pink-400 to-purple-400 relative overflow-hidden">
+              <img id="bannerImage" src="" alt="Banner" class="w-full h-full object-cover" style="display: none;">
+              
+
         </div>
         
         <!-- App Title -->
         <div class="animated-pastel-bg py-6 shadow-sm">
-            <div class="container mx-auto px-4 text-center">
-                <h1 id="appTitle" class="text-3xl md:text-5xl font-bold text-white drop-shadow-lg">Meter Monitoring</h1>
+            <div class="container mx-auto px-3 text-center">
+                <h1 id="appTitle" class="text-2xl md:text-4xl font-bold text-white drop-shadow-lg">Meter Monitoring</h1>
             </div>
         </div>
 
@@ -210,7 +212,7 @@
             <div class="max-w-4xl mx-auto">
                 <div class="bg-white rounded-lg card-shadow p-6 md:p-8">
                     <h2 class="text-2xl font-bold text-gray-800 mb-6 text-center">
-                        <i class="fas fa-plus-circle text-pink-400 mr-2"></i>บันทึกข้อมูลใหม่
+                        <i class="fas fa-plus-circle text-pink-400 mr-2"></i>บันทึกข้อมูล มิเตอร์ไฟฟ้าชั่วคราว
                     </h2>
                     
                     <form id="recordForm" class="space-y-6">
@@ -285,10 +287,18 @@
                             </div>
 
                             <!-- Invoice -->
-                            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 md:col-span-2">
+                            <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                                 <label class="block text-sm font-medium text-gray-700 mb-2">ใบแจ้งหนี้</label>
                                 <input type="file" id="invoice" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" onchange="previewFile(this, 'invoicePreview')">
                                 <div id="invoicePreview" class="mt-2"></div>
+                            </div>
+
+                            <!-- District -->
+                            <div class="bg-gray-50 p-4 rounded-lg">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">อำเภอ</label>
+                                <select id="district" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400" required>
+                                    <option value="">เลือกอำเภอ</option>
+                                </select>
                             </div>
                         </div>
 
@@ -351,7 +361,7 @@
 
             <!-- Search and Filter -->
             <div class="bg-white rounded-lg card-shadow p-6 mb-8">
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">ค้นหา</label>
                         <input type="text" id="searchInput" placeholder="ค้นหาชื่อหน่วยงานหรือ CA..." class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
@@ -362,6 +372,12 @@
                             <option value="">ทั้งหมด</option>
                             <option value="in-progress">กำลังดำเนินการ</option>
                             <option value="completed">แล้วเสร็จ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">กรองอำเภอ</label>
+                        <select id="districtFilter" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
+                            <option value="">ทั้งหมด</option>
                         </select>
                     </div>
                     <div class="flex items-end">
@@ -394,6 +410,7 @@
                                 <th class="px-4 py-3 text-left">CA</th>
                                 <th class="px-4 py-3 text-left">จุดติดตั้ง</th>
                                 <th class="px-4 py-3 text-left">เบอร์ติดต่อ</th>
+                                <th class="px-4 py-3 text-left">อำเภอ</th>
                                 <th class="px-4 py-3 text-left">สถานะ</th>
                                 <th class="px-4 py-3 text-left">จัดการ</th>
                             </tr>
@@ -613,6 +630,38 @@
                         });
                     }
                     
+                    // Load districts
+                    const districts = [
+                        'เมืองนครพนม',
+                        'ธาตุพนม',
+                        'นาแก',
+                        'ศรีสงคราม',
+                        'นาทม',
+                        'บ้านแพง',
+                        'ปลาปาก',
+                        'เรณูนคร',
+                        'นาหว้า',
+                        'โพนสวรรค์',
+                        'วังยาง'
+                    ];
+                    
+                    const districtSelect = document.getElementById('district');
+                    const districtFilter = document.getElementById('districtFilter');
+                    
+                    districts.forEach(district => {
+                        // For form select
+                        const option1 = document.createElement('option');
+                        option1.value = district;
+                        option1.textContent = district;
+                        districtSelect.appendChild(option1);
+                        
+                        // For filter select
+                        const option2 = document.createElement('option');
+                        option2.value = district;
+                        option2.textContent = district;
+                        districtFilter.appendChild(option2);
+                    });
+                    
                     // Load other links
                     loadOtherLinks();
                 }
@@ -623,21 +672,32 @@
 
         // Load other links
         function loadOtherLinks() {
-            if (appConfig.otherLinks) {
-                const container = document.getElementById('otherLinks');
+            const container = document.getElementById('otherLinks');
+            
+            if (appConfig.otherLinks && appConfig.otherLinks.length > 0) {
                 container.innerHTML = '';
                 
                 appConfig.otherLinks.forEach(link => {
-                    const linkDiv = document.createElement('div');
-                    linkDiv.className = 'bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition duration-300';
-                    linkDiv.innerHTML = `
-                        <a href="${link.url}" target="_blank" class="flex items-center text-pink-600 hover:text-pink-800">
-                            <i class="fas fa-external-link-alt mr-3"></i>
-                            <span class="font-medium">${link.name}</span>
-                        </a>
-                    `;
-                    container.appendChild(linkDiv);
+                    if (link.name && link.url) {
+                        const linkDiv = document.createElement('div');
+                        linkDiv.className = 'bg-gray-50 p-4 rounded-lg hover:bg-gray-100 transition duration-300';
+                        linkDiv.innerHTML = `
+                            <a href="${link.url}" target="_blank" class="flex items-center text-pink-600 hover:text-pink-800">
+                                <i class="fas fa-external-link-alt mr-3"></i>
+                                <span class="font-medium">${link.name}</span>
+                            </a>
+                        `;
+                        container.appendChild(linkDiv);
+                    }
                 });
+            } else {
+                container.innerHTML = `
+                    <div class="text-center py-8">
+                        <i class="fas fa-link text-4xl text-gray-300 mb-4"></i>
+                        <p class="text-gray-500">ยังไม่มีลิงก์ที่เพิ่มเข้ามา</p>
+                        <p class="text-sm text-gray-400 mt-2">ลิงก์จะแสดงที่นี่เมื่อมีการเพิ่มใน Google Sheets</p>
+                    </div>
+                `;
             }
         }
 
@@ -725,6 +785,7 @@
                 formData.append('ca', document.getElementById('ca').value);
                 formData.append('installPoint', document.getElementById('installPoint').value);
                 formData.append('contact', document.getElementById('contact').value);
+                formData.append('district', document.getElementById('district').value);
                 formData.append('notes', document.getElementById('notes').value);
                 
                 // Handle file uploads
@@ -820,6 +881,7 @@
         function displayData() {
             const searchTerm = document.getElementById('searchInput').value.toLowerCase();
             const statusFilter = document.getElementById('statusFilter').value;
+            const districtFilter = document.getElementById('districtFilter').value;
             
             let filteredData = allData.filter(item => {
                 const matchesSearch = item.orgName.toLowerCase().includes(searchTerm) || 
@@ -832,7 +894,12 @@
                     matchesStatus = !isCompleted(item);
                 }
                 
-                return matchesSearch && matchesStatus;
+                let matchesDistrict = true;
+                if (districtFilter) {
+                    matchesDistrict = item.district === districtFilter;
+                }
+                
+                return matchesSearch && matchesStatus && matchesDistrict;
             });
             
             const startIndex = (currentPage - 1) * itemsPerPage;
@@ -861,6 +928,7 @@
                     <td class="px-4 py-3">${item.ca || '-'}</td>
                     <td class="px-4 py-3">${item.installPoint}</td>
                     <td class="px-4 py-3">${item.contact || '-'}</td>
+                    <td class="px-4 py-3">${item.district || '-'}</td>
                     <td class="px-4 py-3">${status}</td>
                     <td class="px-4 py-3">
                         <button onclick="showTracking(${startIndex + index})" class="bg-blue-500 text-white px-3 py-1 rounded text-sm hover:bg-blue-600 mr-2">
@@ -935,6 +1003,11 @@
         });
 
         document.getElementById('statusFilter').addEventListener('change', () => {
+            currentPage = 1;
+            displayData();
+        });
+
+        document.getElementById('districtFilter').addEventListener('change', () => {
             currentPage = 1;
             displayData();
         });
@@ -1023,32 +1096,42 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                     <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                         <label class="block text-sm font-medium text-gray-700 mb-2">ไฟล์คำร้อง/หนังสือ</label>
-                        <input type="file" id="updateRequestFile" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
-                        ${item.requestFile ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว</p>' : ''}
+                        <input type="file" id="updateRequestFile" accept="image/*,.pdf,.doc,.docx" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400"
+                               ${item.requestFile ? 'disabled' : ''}>
+                        ${item.requestFile ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว - ไม่สามารถแก้ไขได้</p>' : '<p class="text-sm text-gray-500 mt-1">ยังไม่มีไฟล์</p>'}
                     </div>
                     
                     <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                         <label class="block text-sm font-medium text-gray-700 mb-2">หน่วยตั้งต้น</label>
-                        <input type="file" id="updateInitialUnit" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
-                        ${item.initialUnit ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว</p>' : ''}
+                        <input type="file" id="updateInitialUnit" accept="image/*,.pdf,.doc,.docx" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400"
+                               ${item.initialUnit ? 'disabled' : ''}>
+                        ${item.initialUnit ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว - ไม่สามารถแก้ไขได้</p>' : '<p class="text-sm text-gray-500 mt-1">ยังไม่มีไฟล์</p>'}
                     </div>
                     
                     <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">หน่วยถอดถอน</label>
-                        <input type="file" id="updateRemovalUnit" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
-                        ${item.removalUnit ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว</p>' : ''}
+                        <label class="block text-sm font-medium text-gray-700 mb-2">หน่วยถอนคืน</label>
+                        <input type="file" id="updateRemovalUnit" accept="image/*,.pdf,.doc,.docx" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400"
+                               ${item.removalUnit ? 'disabled' : ''}>
+                        ${item.removalUnit ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว - ไม่สามารถแก้ไขได้</p>' : '<p class="text-sm text-gray-500 mt-1">ยังไม่มีไฟล์</p>'}
                     </div>
                     
                     <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Final Bills</label>
-                        <input type="file" id="updateFinalBills" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
-                        ${item.finalBills ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว</p>' : ''}
+                        <input type="file" id="updateFinalBills" accept="image/*,.pdf,.doc,.docx" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400"
+                               ${item.finalBills ? 'disabled' : ''}>
+                        ${item.finalBills ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว - ไม่สามารถแก้ไขได้</p>' : '<p class="text-sm text-gray-500 mt-1">ยังไม่มีไฟล์</p>'}
                     </div>
                     
                     <div class="bg-yellow-50 p-4 rounded-lg border border-yellow-200 md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">ใบแจ้งหนี้</label>
-                        <input type="file" id="updateInvoice" accept="image/*,.pdf,.doc,.docx" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400">
-                        ${item.invoice ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว</p>' : ''}
+                        <input type="file" id="updateInvoice" accept="image/*,.pdf,.doc,.docx" 
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-pink-400"
+                               ${item.invoice ? 'disabled' : ''}>
+                        ${item.invoice ? '<p class="text-sm text-green-600 mt-1"><i class="fas fa-check"></i> มีไฟล์แล้ว - ไม่สามารถแก้ไขได้</p>' : '<p class="text-sm text-gray-500 mt-1">ยังไม่มีไฟล์</p>'}
                     </div>
                 </div>
                 
@@ -1322,7 +1405,7 @@
                 return;
             }
             
-            const headers = ['ลำดับ', 'วันที่', 'ประเภทมิเตอร์', 'ชื่อหน่วยงาน', 'CA', 'จุดติดตั้ง', 'เบอร์ติดต่อ', 'สถานะ', 'หมายเหตุ'];
+            const headers = ['ลำดับ', 'วันที่', 'ประเภทมิเตอร์', 'ชื่อหน่วยงาน', 'CA', 'จุดติดตั้ง', 'เบอร์ติดต่อ', 'อำเภอ', 'สถานะ', 'หมายเหตุ'];
             const csvContent = [
                 headers.join(','),
                 ...allData.map((item, index) => [
@@ -1333,6 +1416,7 @@
                     item.ca || '',
                     `"${item.installPoint || ''}"`,
                     item.contact || '',
+                    item.district || '',
                     isCompleted(item) ? 'แล้วเสร็จ' : 'กำลังดำเนินการ',
                     `"${item.notes || ''}"`
                 ].join(','))
@@ -1357,5 +1441,5 @@
             });
         }
     </script>
-<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96b35ca387ae731d',t:'MTc1NDUzMzkyOS4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+<script>(function(){function c(){var b=a.contentDocument||a.contentWindow.document;if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'96b368ff025c45b4',t:'MTc1NDUzNDQzNi4wMDAwMDA='};var a=document.createElement('script');a.nonce='';a.src='/cdn-cgi/challenge-platform/scripts/jsd/main.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
 </html>
